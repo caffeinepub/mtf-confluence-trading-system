@@ -18,11 +18,13 @@ import {
   AlertTriangle,
   Check,
   ChevronRight,
+  Image,
   Info,
   Loader2,
   Lock,
+  X,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 interface TradeFormProps {
@@ -97,7 +99,6 @@ export function TradeForm({ onNavigate }: TradeFormProps) {
 
   // Step 4
   const [timeframe, setTimeframe] = useState("");
-  const [lowerTFSignal, setLowerTFSignal] = useState("");
   const [candleType, setCandleType] = useState("");
 
   // Step 5
@@ -111,6 +112,8 @@ export function TradeForm({ onNavigate }: TradeFormProps) {
   const [tp, setTp] = useState("");
   const [accountBalance, setAccountBalance] = useState("");
   const [notes, setNotes] = useState("");
+  const [beforeScreenshot, setBeforeScreenshot] = useState<string>("");
+  const [afterScreenshot, setAfterScreenshot] = useState<string>("");
 
   // Computed risk values
   const [riskPips, setRiskPips] = useState(0);
@@ -119,6 +122,8 @@ export function TradeForm({ onNavigate }: TradeFormProps) {
   const [lotSize, setLotSize] = useState(0);
 
   const addTrade = useAddTrade();
+  const beforeScreenshotRef = useRef<HTMLInputElement>(null);
+  const afterScreenshotRef = useRef<HTMLInputElement>(null);
 
   // ─── Auto-compute market structure bias ───────────────────────────────────
   useEffect(() => {
@@ -167,7 +172,7 @@ export function TradeForm({ onNavigate }: TradeFormProps) {
   const isStep1Valid = !!weeklyBias && !!dailyBias && !!fourHBias;
   const isStep2Valid = !!aoiLevel.trim() && !!marketStage;
   const isStep3Valid = !!pattern4H;
-  const isStep4Valid = !!timeframe && !!lowerTFSignal && !!candleType;
+  const isStep4Valid = !!timeframe && !!candleType;
   const isStep5Valid =
     !!pair &&
     !!direction &&
@@ -176,7 +181,7 @@ export function TradeForm({ onNavigate }: TradeFormProps) {
     !!sl &&
     !!tp &&
     !!accountBalance &&
-    rr >= 2.0;
+    rr >= 1.5;
 
   const stepValid = [
     isStep1Valid,
@@ -214,7 +219,7 @@ export function TradeForm({ onNavigate }: TradeFormProps) {
         aoiLevel,
         marketStage,
         pattern4H: pattern4H + (patternNotes ? ` (${patternNotes})` : ""),
-        lowerTFSignal: `${timeframe} ${lowerTFSignal}`,
+        lowerTFSignal: timeframe,
         candleType,
         entry: Number.parseFloat(entry),
         sl: Number.parseFloat(sl),
@@ -431,15 +436,15 @@ export function TradeForm({ onNavigate }: TradeFormProps) {
         >
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <Label>AOI Level</Label>
+              <Label>Round Psychological Level</Label>
               <Input
-                placeholder="e.g. 1.2850 - 1.2880"
+                placeholder="e.g. 1.2850 (round level)"
                 value={aoiLevel}
                 onChange={(e) => setAoiLevel(e.target.value)}
                 className="font-mono"
               />
               <p className="text-xs text-muted-foreground">
-                Mark the key zone where price should react
+                Mark the round psychological price level
               </p>
             </div>
             <div className="space-y-2">
@@ -451,20 +456,20 @@ export function TradeForm({ onNavigate }: TradeFormProps) {
               >
                 {[
                   {
-                    value: "Stage 1 - Accumulation",
-                    label: "Stage 1 — Accumulation",
+                    value: "Stage 1 - Top",
+                    label: "Stage 1 — Top",
                     desc: "Wait for confirmation",
                     color: "text-pending",
                   },
                   {
-                    value: "Stage 2 - Markup",
-                    label: "Stage 2 — Markup/Markdown",
+                    value: "Stage 2 - On The Way (OTW)",
+                    label: "Stage 2 — On The Way (OTW)",
                     desc: "Trade with trend",
                     color: "text-win",
                   },
                   {
-                    value: "Stage 3 - Distribution",
-                    label: "Stage 3 — Distribution",
+                    value: "Stage 3 - Area Of Interest (AOI)",
+                    label: "Stage 3 — Area Of Interest (AOI)",
                     desc: "Wait or counter-trend only",
                     color: "text-loss",
                   },
@@ -528,6 +533,7 @@ export function TradeForm({ onNavigate }: TradeFormProps) {
                     "Lower High (LH)",
                     "Double Bottom",
                     "Double Top",
+                    "Head and Shoulders",
                     "Other",
                   ].map((p) => (
                     <SelectItem key={p} value={p}>
@@ -569,7 +575,7 @@ export function TradeForm({ onNavigate }: TradeFormProps) {
           weight={STEP_WEIGHTS[3]}
           isComplete={completedSteps[3]}
         >
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>
                 Timeframe <span className="text-destructive">*</span>
@@ -582,29 +588,6 @@ export function TradeForm({ onNavigate }: TradeFormProps) {
                   {["15m", "30m", "1H"].map((tf) => (
                     <SelectItem key={tf} value={tf}>
                       {tf}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label>
-                Signal <span className="text-destructive">*</span>
-              </Label>
-              <Select value={lowerTFSignal} onValueChange={setLowerTFSignal}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select signal" />
-                </SelectTrigger>
-                <SelectContent>
-                  {[
-                    "Break of Structure",
-                    "Inducement",
-                    "Liquidity Grab",
-                    "Fair Value Gap",
-                    "Other",
-                  ].map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {s}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -767,6 +750,118 @@ export function TradeForm({ onNavigate }: TradeFormProps) {
               />
             </div>
 
+            {/* Screenshot Uploads */}
+            <div className="space-y-2">
+              <Label>Trade Screenshots</Label>
+              <div className="grid grid-cols-2 gap-3">
+                {/* Before Trade Screenshot */}
+                <div className="space-y-1.5">
+                  <p className="text-xs text-muted-foreground">Before Trade</p>
+                  <input
+                    ref={beforeScreenshotRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    data-ocid="trade_form.before_screenshot_upload"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const reader = new FileReader();
+                      reader.onload = (ev) => {
+                        setBeforeScreenshot(ev.target?.result as string);
+                      };
+                      reader.readAsDataURL(file);
+                    }}
+                  />
+                  {beforeScreenshot ? (
+                    <div className="relative rounded-md overflow-hidden border border-border aspect-video">
+                      <img
+                        src={beforeScreenshot}
+                        alt="Before trade"
+                        className="w-full h-full object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setBeforeScreenshot("");
+                          if (beforeScreenshotRef.current)
+                            beforeScreenshotRef.current.value = "";
+                        }}
+                        className="absolute top-1 right-1 bg-background/80 hover:bg-background rounded-full p-0.5 transition-colors"
+                        aria-label="Remove before screenshot"
+                      >
+                        <X className="w-3.5 h-3.5 text-foreground" />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => beforeScreenshotRef.current?.click()}
+                      className="w-full aspect-video border-2 border-dashed border-border rounded-md flex flex-col items-center justify-center gap-1.5 hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer"
+                    >
+                      <Image className="w-5 h-5 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground">
+                        Click to upload
+                      </span>
+                    </button>
+                  )}
+                </div>
+
+                {/* After Trade Screenshot */}
+                <div className="space-y-1.5">
+                  <p className="text-xs text-muted-foreground">After Trade</p>
+                  <input
+                    ref={afterScreenshotRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    data-ocid="trade_form.after_screenshot_upload"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const reader = new FileReader();
+                      reader.onload = (ev) => {
+                        setAfterScreenshot(ev.target?.result as string);
+                      };
+                      reader.readAsDataURL(file);
+                    }}
+                  />
+                  {afterScreenshot ? (
+                    <div className="relative rounded-md overflow-hidden border border-border aspect-video">
+                      <img
+                        src={afterScreenshot}
+                        alt="After trade"
+                        className="w-full h-full object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAfterScreenshot("");
+                          if (afterScreenshotRef.current)
+                            afterScreenshotRef.current.value = "";
+                        }}
+                        className="absolute top-1 right-1 bg-background/80 hover:bg-background rounded-full p-0.5 transition-colors"
+                        aria-label="Remove after screenshot"
+                      >
+                        <X className="w-3.5 h-3.5 text-foreground" />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => afterScreenshotRef.current?.click()}
+                      className="w-full aspect-video border-2 border-dashed border-border rounded-md flex flex-col items-center justify-center gap-1.5 hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer"
+                    >
+                      <Image className="w-5 h-5 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground">
+                        Click to upload
+                      </span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
             {/* Risk Calculator Results */}
             {pair && entry && sl && tp && (
               <div className="bg-secondary/60 rounded-md border border-border p-4">
@@ -791,7 +886,7 @@ export function TradeForm({ onNavigate }: TradeFormProps) {
                       label: "R:R Ratio",
                       value: `1:${rr.toFixed(2)}`,
                       unit: "",
-                      highlight: rr >= 2 ? "text-win" : "text-loss",
+                      highlight: rr >= 1.5 ? "text-win" : "text-loss",
                     },
                     {
                       label: "Position Size",
@@ -818,10 +913,10 @@ export function TradeForm({ onNavigate }: TradeFormProps) {
                   ))}
                 </div>
 
-                {rr < 2 && (riskPips > 0 || rewardPips > 0) && (
+                {rr < 1.5 && (riskPips > 0 || rewardPips > 0) && (
                   <div className="mt-3 flex items-center gap-2 text-xs text-loss bg-loss-subtle border border-loss/20 rounded-md p-2">
                     <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
-                    R:R ratio must be ≥ 2.0 to submit this trade
+                    R:R ratio must be ≥ 1.5 to submit this trade
                   </div>
                 )}
 
@@ -849,8 +944,8 @@ export function TradeForm({ onNavigate }: TradeFormProps) {
               isComplete={completedSteps[4]}
               onComplete={() => handleCompleteStep(4)}
               customMessage={
-                !isStep5Valid && rr > 0 && rr < 2
-                  ? "R:R must be ≥ 2.0"
+                !isStep5Valid && rr > 0 && rr < 1.5
+                  ? "R:R must be ≥ 1.5"
                   : undefined
               }
             />

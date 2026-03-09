@@ -218,7 +218,7 @@ export function EditTradeModal({ trade, open, onClose }: EditTradeModalProps) {
               {
                 label: "R:R",
                 value: `1:${rr.toFixed(2)}`,
-                cls: rr >= 2 ? "text-win" : "text-loss",
+                cls: rr >= 1.5 ? "text-win" : "text-loss",
               },
             ].map((item) => (
               <div key={item.label}>
@@ -237,10 +237,10 @@ export function EditTradeModal({ trade, open, onClose }: EditTradeModalProps) {
             ))}
           </div>
 
-          {rr < 2 && rr > 0 && (
+          {rr < 1.5 && rr > 0 && (
             <div className="flex items-center gap-2 text-xs text-loss bg-loss-subtle border border-loss/20 rounded p-2">
               <AlertTriangle className="w-3.5 h-3.5" />
-              R:R below 2.0 — strategy requires minimum 1:2
+              R:R below 1.5 — strategy requires minimum 1:1.5
             </div>
           )}
 
